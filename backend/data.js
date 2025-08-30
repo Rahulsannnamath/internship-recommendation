@@ -1,5 +1,5 @@
 export const internshipSeedData = [
-    // Full Stack (overlap: React, Node.js, MongoDB)
+    
     {
       title: "Full Stack Developer Intern",
       company: "TechNova Labs",
@@ -41,7 +41,6 @@ export const internshipSeedData = [
       deadline: "2025-09-25T00:00:00.000Z"
     },
   
-    // AI / ML (overlap: Python, Pandas, ML)
     {
       title: "Machine Learning Intern",
       company: "Cerebro Labs",
