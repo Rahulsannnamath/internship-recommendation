@@ -13,8 +13,7 @@ app.use(cors({ origin: "*" }));
 
 dotenv.config();
 const PORT = process.env.PORT || 8080;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/internshipDB";
-
+const MONGO_URI = process.env.URL;
 
 async function connectDB() {
   try {
