@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageCircle, LineChart, Briefcase, UserCircle2, Sun, Moon } from 'lucide-react';
+import { LineChart, Briefcase, Sun, Moon, LogIn, UserPlus, User, MessageCircle } from 'lucide-react';
 import Dashboard from './pages/Dashboard.jsx';
 import Internships from './pages/Internships.jsx';
 import Profile from './pages/Profile.jsx';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
 import ChatBot from './components/chat/ChatBot.jsx';
 
 const App = () => {
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true;
+  });
   const [chatOpen, setChatOpen] = useState(false);
-  const [dark, setDark] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
 
   return (
@@ -27,16 +33,23 @@ const App = () => {
               <Briefcase size={18} /> <span>Internships</span>
             </NavLink>
             <NavLink to="/profile" className="nav-item">
-              <UserCircle2 size={18} /> <span>Profile</span>
+              <User size={18} /> <span>Profile</span>
+            </NavLink>
+            <NavLink to="/chat" className="nav-item">
+              <MessageCircle size={18} /> <span>chat</span>
             </NavLink>
           </div>
           <div className="actions">
+            <NavLink to="/login" className="nav-item">
+              <LogIn size={18} />
+              <span>Login</span>
+            </NavLink>
+            <NavLink to="/signup" className="nav-item">
+              <UserPlus size={18} />
+              <span>Sign Up</span>
+            </NavLink>
             <button className="mode-btn" onClick={() => setDark(d => !d)}>
               {dark ? <Sun size={18}/> : <Moon size={18}/>}
-            </button>
-            <button className="chat-btn" onClick={() => setChatOpen(true)}>
-              <MessageCircle size={18} />
-              <span className="hide-sm">Chat</span>
             </button>
           </div>
         </nav>
@@ -45,12 +58,11 @@ const App = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/internships" element={<Internships />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
           </Routes>
         </main>
         <ChatBot open={chatOpen} onClose={() => setChatOpen(false)} />
-        <button className="fab" onClick={() => setChatOpen(true)} aria-label="Chat">
-          <MessageCircle size={22}/>
-        </button>
       </div>
     </BrowserRouter>
   );

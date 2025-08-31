@@ -54,6 +54,190 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Nav items unified (links + Account button) */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem 1rem;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: .75rem;
+  font-weight: 500;
+  line-height: 1;
+  background: transparent !important;
+  color: var(--text) !important;
+  border: none !important;
+  transition: .25s;
+  white-space: nowrap;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+.caret {
+  font-size: .6rem;
+  opacity: .65;
+  transition: .25s;
+  margin-left: .15rem;
+}
+
+.caret.open {
+  transform: rotate(180deg);
+  opacity: .9;
+}
+
+/* Dropdown unchanged */
+.acct-wrapper { position:relative; }
+.acct-menu {
+  position:absolute;
+  top:108%;
+  right:0;
+  z-index:60;
+  background:var(--bg-alt);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:.45rem .55rem;
+  display:flex;
+  flex-direction:column;
+  gap:.15rem;
+  box-shadow:0 10px 24px -8px rgba(0,0,0,.4);
+}
+.acct-link {
+  text-decoration:none;
+  font-size:.68rem;
+  padding:.55rem .65rem;
+  border-radius:10px;
+  color:var(--text-soft);
+  display:flex;
+}
+.acct-link:hover,
+.acct-link.active {
+  background:var(--primary-soft);
+  color:var(--primary);
+}
+@media (max-width:640px){
+  .acct-menu { left:0; right:auto; }
+}
+
+/* Adjust actions spacing */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .actions {
+    gap: .4rem;
+  }
+}
+
+/* Center nav-links and adjust chat button */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: relative;
+  /* other existing styles... */
+}
+
+.nav-links {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 1;
+}
+
+.logo {
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+/* Make chat button smaller */
+.chat-btn {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .4rem .65rem;
+  border-radius: 12px;
+  font-size: .65rem;
+  /* other existing styles... */
+}
+
+/* Chat button retains original corner styling but in nav */
+.chat-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .45rem .75rem;
+  border-radius: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-size: .7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: .25s;
+  box-shadow: 0 4px 12px -4px rgba(0,0,0,.3);
+}
+
+.chat-nav-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -4px rgba(0,0,0,.4);
+}
+
+.chat-nav-btn:active {
+  transform: translateY(0);
+}
+
+/* Chat button styled exactly like nav-items */
+.chat-nav-item {
+  cursor: pointer;
+  background: transparent !important;
+  border: none !important;
+  font: inherit;
+}
+
+.chat-nav-item:hover {
+  background: var(--primary-soft) !important;
+  color: var(--primary) !important;
+}
+
+/* Remove/hide FAB */
+.fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    position: static;
+    transform: none;
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-links {
+    position: static;
+    transform: none;
+    flex: 1;
+    justify-content: center;
+    margin: 0 2rem;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
