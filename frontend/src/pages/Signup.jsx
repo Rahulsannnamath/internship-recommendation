@@ -1,19 +1,43 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+
 const Signup = () => {
-  const [form,setForm]=useState({ email:'', password:'', confirm:'' });
-  const [err,setErr]=useState('');
+  const [form, setForm] = useState({ email: '', password: '', confirm: '' });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const change = e => setForm({...form,[e.target.name]:e.target.value});
-  const submit = e => {
+  const change = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const submit = async e => {
     e.preventDefault();
     setErr('');
-    if(!form.email || !form.password || !form.confirm) return setErr('All fields required');
-    if(form.password !== form.confirm) return setErr('Passwords do not match');
-    // Placeholder registration success
-    setTimeout(()=> navigate('/login'), 400);
+    if (!form.email || !form.password || !form.confirm) return setErr('All fields required');
+    if (form.password !== form.confirm) return setErr('Passwords do not match');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, password: form.password })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Signup failed');
+      // Persist auth immediately (user should complete profile next)
+      localStorage.setItem('token', json.token);
+      localStorage.setItem('user', JSON.stringify({ id: json.user.id, email: json.user.email }));
+      if (json.user.profile) {
+        localStorage.setItem('profile', JSON.stringify(json.user.profile));
+      }
+      // Redirect to profile completion page
+      navigate('/profile', { replace: true });
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,6 +54,9 @@ const Signup = () => {
             value={form.email}
             onChange={change}
             placeholder="you@example.com"
+            autoComplete="email"
+            disabled={loading}
+            required
           />
         </label>
         <label className="f-label">Password
@@ -40,6 +67,10 @@ const Signup = () => {
             value={form.password}
             onChange={change}
             placeholder="••••••••"
+            autoComplete="new-password"
+            disabled={loading}
+            required
+            minLength={6}
           />
         </label>
         <label className="f-label">Confirm Password
@@ -50,9 +81,15 @@ const Signup = () => {
             value={form.confirm}
             onChange={change}
             placeholder="••••••••"
+            autoComplete="new-password"
+            disabled={loading}
+            required
+            minLength={6}
           />
         </label>
-        <button className="btn-primary auth-btn" type="submit">Create Account</button>
+        <button className="btn-primary auth-btn" type="submit" disabled={loading}>
+          {loading ? 'Creating...' : 'Create Account'}
+        </button>
         <div className="auth-alt">
           Have an account? <NavLink to="/login">Login</NavLink>
         </div>
@@ -60,4 +97,5 @@ const Signup = () => {
     </div>
   );
 };
+
 export default Signup;

@@ -1,16 +1,24 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+
 const Internships = () => {
   const [q,setQ] = useState('');
   const [items, setItems] = useState([]);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState("");
 
+  // AI rec state
+  const [aiLoading,setAiLoading] = useState(false);
+  const [aiError,setAiError] = useState('');
+  const [aiRecs,setAiRecs] = useState(null); // null = untouched, [] = none returned
+  const [showAI,setShowAI] = useState(false);
+
   useEffect(()=>{
     (async ()=>{
       try {
-        const res = await fetch("http://localhost:8080/api/showPostings");
+        const res = await fetch(`${API_BASE}/api/showPostings`);
         if(!res.ok) throw new Error("Network");
         const json = await res.json();
         setItems(json.data || []);
@@ -27,6 +35,36 @@ const Internships = () => {
     i.company?.toLowerCase().includes(q.toLowerCase()) ||
     (i.skillsRequired||[]).some(s=>s.toLowerCase().includes(q.toLowerCase()))
   ),[q,items]);
+
+  const fetchAI = async () => {
+    const token = localStorage.getItem('token');
+    if(!token){
+      setAiError('Please login to get AI recommendations.');
+      setShowAI(true);
+      return;
+    }
+    setAiError('');
+    setAiLoading(true);
+    setShowAI(true);
+    setAiRecs(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/recommendations`, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          Authorization:`Bearer ${token}`
+        }
+      });
+      const json = await res.json();
+      if(!res.ok) throw new Error(json.error || 'Failed to generate');
+      setAiRecs(json.recommendations || []);
+    } catch(e){
+      setAiError(e.message);
+      setAiRecs([]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if(loading) return <div className="pad">Loading internships...</div>;
   if(error) return <div className="pad error">{error}</div>;
@@ -47,12 +85,108 @@ const Internships = () => {
           type="button"
           className="btn-out btn-out--sm"
           aria-label="Get AI recommendations"
-          onClick={()=>console.log("AI recommendations click - implement later")}
+          onClick={fetchAI}
+          disabled={aiLoading}
         >
           <Sparkles size={14} />
-          <span>AI Recommendations</span>
+          <span>{aiLoading ? 'Generating...' : 'AI Recommendations'}</span>
         </button>
       </div>
+
+      {showAI && (
+        <div className="panel" style={{marginBottom:'1.4rem'}}>
+          <div className="panel-head">
+            <h2>AI Recommendations</h2>
+            <span style={{fontSize:'.6rem', color:'var(--text-soft)'}}>
+              {aiLoading ? 'Working...' : (aiRecs ? `${aiRecs.length} results` : '')}
+            </span>
+          </div>
+          {aiError && <div className="alert error small" style={{marginBottom:'.7rem'}}>{aiError}</div>}
+          {aiLoading && (
+            <div style={{display:'grid', gap:'1rem', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))'}}>
+              {Array.from({length:3}).map((_,i)=>
+                <div key={i} className="i-card" style={{opacity:.6}}>
+                  <div style={{height:14, background:'var(--border-soft)', borderRadius:6, width:'70%'}} />
+                  <div style={{height:10, background:'var(--border-soft)', borderRadius:6, width:'40%', marginTop:10}} />
+                  <div style={{display:'flex', gap:6, marginTop:14}}>
+                    {Array.from({length:4}).map((__,j)=>
+                      <span key={j} className="chip tiny" style={{background:'var(--border-soft)', color:'transparent'}}>----</span>
+                    )}
+                  </div>
+                  <div style={{height:60, background:'var(--border-soft)', borderRadius:10, marginTop:14}} />
+                </div>
+              )}
+            </div>
+          )}
+          {!aiLoading && aiRecs && (
+            aiRecs.length === 0
+              ? <div className="empty">No recommendations returned.</div>
+              : <div className="i-grid">
+                  {aiRecs.map(r => (
+                    <div key={r.internship.id} className="i-card">
+                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                        <div>
+                          <div className="i-title">{r.internship.title}</div>
+                          <div className="i-meta">
+                            {r.internship.company} • {(Array.isArray(r.internship.location)?r.internship.location.join(', '):r.internship.location)||'Remote'}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            background:'var(--primary-soft)',
+                            color:'var(--primary)',
+                            padding:'.35rem .55rem',
+                            borderRadius:'12px',
+                            fontSize:'.6rem',
+                            fontWeight:600,
+                            display:'flex',
+                            flexDirection:'column',
+                            alignItems:'center',
+                            minWidth:'60px'
+                          }}
+                          title="Match percentage"
+                        >
+                          <span style={{fontSize:'.65rem'}}>{r.matchPercentage}%</span>
+                          <span style={{fontSize:'.5rem', letterSpacing:'.5px'}}>Match</span>
+                        </div>
+                      </div>
+
+                      {r.justification && (
+                        <div className="i-desc">
+                          {r.justification}
+                        </div>
+                      )}
+
+                      {r.missingSkills?.length > 0 && (
+                        <div style={{marginTop:'.2rem'}}>
+                          <div style={{fontSize:'.55rem', textTransform:'uppercase', letterSpacing:'.7px', color:'var(--text-soft)', fontWeight:600, marginBottom:'.3rem'}}>
+                            Missing Skills
+                          </div>
+                          <div className="i-skills">
+                            {r.missingSkills.map(ms => (
+                              <span key={ms} className="chip tiny" style={{background:'var(--bg)', color:'var(--text-soft)'}}>
+                                {ms}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{marginTop:'.4rem'}}>
+                        <div style={{fontSize:'.55rem', textTransform:'uppercase', letterSpacing:'.6px', color:'var(--text-soft)', fontWeight:600, marginBottom:'.25rem'}}>Required Skills</div>
+                        <div className="i-skills">
+                          {(r.internship.skillsRequired || []).map(s => (
+                            <span key={s} className="chip tiny">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+          )}
+        </div>
+      )}
+
       <div className="i-grid">
         {filtered.map(it=>(
           <div key={it._id} className="i-card">
@@ -65,7 +199,7 @@ const Internships = () => {
               ))}
             </div>
             <div className="i-foot">
-              <span>{it.location?.join(", ")}</span>
+              <span>{Array.isArray(it.location) ? it.location.join(", ") : it.location}</span>
               <span>{it.duration}</span>
             </div>
           </div>
