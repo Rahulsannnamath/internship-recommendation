@@ -123,63 +123,71 @@ const Internships = () => {
               ? <div className="empty">No recommendations returned.</div>
               : <div className="i-grid">
                   {aiRecs.map(r => (
-                    <div key={r.internship.id} className="i-card">
+                    <div key={r.internship.id} className="i-card ai-rec-card">
                       <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                         <div>
                           <div className="i-title">{r.internship.title}</div>
+                          <br />
                           <div className="i-meta">
                             {r.internship.company} • {(Array.isArray(r.internship.location)?r.internship.location.join(', '):r.internship.location)||'Remote'}
                           </div>
                         </div>
+                        <br />
                         <div
+                          className="ai-match-badge"
                           style={{
                             background:'var(--primary-soft)',
                             color:'var(--primary)',
-                            padding:'.35rem .55rem',
-                            borderRadius:'12px',
-                            fontSize:'.6rem',
+                            padding:'.42rem .62rem',
+                            borderRadius:'14px',
+                            fontSize:'.62rem',
                             fontWeight:600,
                             display:'flex',
                             flexDirection:'column',
                             alignItems:'center',
-                            minWidth:'60px'
+                            minWidth:'66px',
+                            lineHeight:1.15
                           }}
                           title="Match percentage"
                         >
-                          <span style={{fontSize:'.65rem'}}>{r.matchPercentage}%</span>
-                          <span style={{fontSize:'.5rem', letterSpacing:'.5px'}}>Match</span>
+                          <span style={{fontSize:'.68rem'}}>{r.matchPercentage}%</span>
+                          <span style={{fontSize:'.52rem', letterSpacing:'.5px'}}>Match</span>
                         </div>
                       </div>
 
-                      {r.justification && (
-                        <div className="i-desc">
+                      {/* {r.justification && (
+                        <div className="i-desc ai-justify">
                           {r.justification}
                         </div>
-                      )}
+                      )} */}
 
-                      {r.missingSkills?.length > 0 && (
-                        <div style={{marginTop:'.2rem'}}>
-                          <div style={{fontSize:'.55rem', textTransform:'uppercase', letterSpacing:'.7px', color:'var(--text-soft)', fontWeight:600, marginBottom:'.3rem'}}>
-                            Missing Skills
-                          </div>
-                          <div className="i-skills">
-                            {r.missingSkills.map(ms => (
-                              <span key={ms} className="chip tiny" style={{background:'var(--bg)', color:'var(--text-soft)'}}>
-                                {ms}
+                      {(r.internship.skillsRequired || []).length > 0 && (
+                        <div className="ai-req-block">
+                          <div className="ai-req-label">Required Skills</div>
+                          <div className="i-skills ai-req-skill-chips">
+                            {(r.internship.skillsRequired || []).map(s => (
+                              <span key={s} className="chip tiny ai-req-chip">
+                                {s}
                               </span>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      <div style={{marginTop:'.4rem'}}>
-                        <div style={{fontSize:'.55rem', textTransform:'uppercase', letterSpacing:'.6px', color:'var(--text-soft)', fontWeight:600, marginBottom:'.25rem'}}>Required Skills</div>
-                        <div className="i-skills">
-                          {(r.internship.skillsRequired || []).map(s => (
-                            <span key={s} className="chip tiny">{s}</span>
-                          ))}
+                      {r.missingSkills?.length > 0 && (
+                        <div className="ai-missing-block">
+                          <div className="ai-missing-label">
+                            Missing Skills
+                          </div>
+                          <div className="i-skills ai-missing-skill-chips">
+                            {r.missingSkills.map(ms => (
+                              <span key={ms} className="chip tiny ai-miss-chip">
+                                {ms}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>

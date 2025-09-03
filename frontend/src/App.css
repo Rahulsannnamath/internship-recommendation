@@ -816,7 +816,12 @@ html[data-theme="dark"] .f-input::placeholder {
 }
 
 /* --- Chat Page Enhanced UI --- */
-.chat-view { max-width: 1080px; }
+.chat-view { 
+  width: 1500px;
+  /* max-width: 1080px;  */
+  display: flex;
+  /* justify-content: center; */
+}
 
 .chat-shell {
   display: flex;
@@ -1007,4 +1012,66 @@ html[data-theme="dark"] .f-input::placeholder {
   .bubble { max-width: 88%; }
   .chat-input-bar { flex-direction: column; }
   .send-btn { width: 100%; justify-content: center; }
+}
+
+/* AI Recommendation card spacing & skill blocks */
+.ai-rec-card .ai-req-block,
+.ai-rec-card .ai-missing-block {
+  margin-top: .65rem;
+}
+
+.ai-rec-card .ai-req-label,
+.ai-rec-card .ai-missing-label {
+  font-size: .58rem;
+  text-transform: uppercase;
+  letter-spacing: .75px;
+  color: var(--text-soft);
+  font-weight: 600;
+  margin-bottom: .45rem;
+}
+
+.ai-rec-card .ai-req-skill-chips,
+.ai-rec-card .ai-missing-skill-chips {
+  gap: .5rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ai-rec-card .ai-req-chip,
+.ai-rec-card .ai-miss-chip {
+  background: var(--bg);
+  color: var(--text-soft);
+  line-height: 1.2;
+  padding: .32rem .55rem;
+  border-radius: 999px;
+}
+
+/* Wider chat layout */
+.chat-view {
+  max-width: 100%;
+  width: 100%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.chat-shell--wide {
+  width: 100%;
+  max-width: 1500px;          /* adjust this number if you want even wider */
+  margin: 0 auto;
+  min-height: calc(100vh - 300px); /* was: calc(100vh - 180px) */
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-shell--wide .chat-message-list {
+  flex: 1;
+  min-height: 360px;          /* was: 480px */
+}
+
+@media (max-width: 1300px) {
+  .chat-shell--wide {
+    max-width: 100%;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
 }

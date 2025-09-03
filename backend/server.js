@@ -12,6 +12,7 @@ import User from './models/User.js';
 import UserProfile from './models/userProfile.js';
 import { auth } from './middleware/auth.js';
 import { generateRecommendationsForUser } from "./services/recommendInternships.js";
+import { chatWithGemini } from "./services/chatGemini.js";
 
 // TEMP DIAGNOSTIC (remove later)
 console.log('[BOOT] GEMINI_API_KEY present:', process.env.GEMINI_API_KEY ? 'YES len=' + process.env.GEMINI_API_KEY.trim().length : 'NO');
@@ -165,6 +166,33 @@ app.post("/api/ai/recommendations", auth, async (req, res) => {
     res.json({ recommendations: recs });
   } catch (e) {
     res.status(400).json({ error: e.message || "Failed to generate recommendations" });
+  }
+});
+
+app.post("/api/ai/chat", async (req, res) => {
+  try {
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "messages array required" });
+    }
+
+    // Try optional auth (for personalization) without forcing it
+    let tokenUserId = null;
+    const header = req.headers.authorization || "";
+    if (header.startsWith("Bearer ")) {
+      try {
+        const raw = header.slice(7);
+        const decoded = jwt.verify(raw, process.env.JWT_SECRET);
+        tokenUserId = decoded.sub;
+      } catch {
+        // ignore invalid token (treat as anonymous)
+      }
+    }
+
+    const result = await chatWithGemini({ messages, tokenUserId });
+    res.json({ answer: result.answer });
+  } catch (e) {
+    res.status(400).json({ error: e.message || "Chat failed" });
   }
 });
 
