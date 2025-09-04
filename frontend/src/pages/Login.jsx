@@ -1,52 +1,51 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const DEMO_EMAIL = 'admin@gmail.com';
+const DEMO_PASS = 'admin1234';
 
 const Login = () => {
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [form, setForm] = useState({ email: DEMO_EMAIL, password: DEMO_PASS });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const change = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const submit = async e => {
-    e.preventDefault();
+  const doLogin = async (email, password) => {
     setErr('');
-    if (!form.email || !form.password) return setErr('All fields required');
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, password: form.password })
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Login failed');
-      // Persist auth
-      localStorage.setItem('token', json.token);
-      localStorage.setItem('user', JSON.stringify({ id: json.user.id, email: json.user.email }));
-      // Optional: store profile
-      if (json.user.profile) {
-        localStorage.setItem('profile', JSON.stringify(json.user.profile));
-      }
-      // Redirect to intended protected route or dashboard
-      const redirectTo = location.state?.from || '/dashboard';
-      navigate(redirectTo, { replace: true });
-    } catch (e2) {
-      setErr(e2.message);
+      await login(email, password);
+      const to = location.state?.from || '/internships';
+      navigate(to, { replace: true });
+    } catch (e) {
+      setErr(e.message || 'Login failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const submit = e => {
+    e.preventDefault();
+    if (!form.email || !form.password) return setErr('All fields required');
+    doLogin(form.email, form.password);
+  };
+
+  const demoLogin = () => {
+    if (loading) return;
+    setForm({ email: DEMO_EMAIL, password: DEMO_PASS });
+    doLogin(DEMO_EMAIL, DEMO_PASS);
   };
 
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
         <h1 className="auth-title">Login</h1>
-        <p className="auth-sub">Access your dashboard.</p>
+        <p className="auth-sub">Demo credentials prefilled. Use Demo Login for instant access.</p>
         {err && <div className="auth-error">{err}</div>}
         <label className="f-label">Email
           <input
@@ -55,10 +54,9 @@ const Login = () => {
             name="email"
             value={form.email}
             onChange={change}
-            placeholder="you@example.com"
             autoComplete="email"
-            disabled={loading}
             required
+            disabled={loading}
           />
         </label>
         <label className="f-label">Password
@@ -68,14 +66,22 @@ const Login = () => {
             name="password"
             value={form.password}
             onChange={change}
-            placeholder="••••••••"
             autoComplete="current-password"
-            disabled={loading}
             required
+            disabled={loading}
           />
         </label>
         <button className="btn-primary auth-btn" type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}
+        </button>
+        <button
+            type="button"
+            className="btn-out auth-btn"
+            onClick={demoLogin}
+            disabled={loading}
+            style={{ marginTop: '.5rem' }}
+        >
+          {loading ? '...' : 'Demo Login'}
         </button>
         <div className="auth-alt">
           No account? <NavLink to="/signup">Sign up</NavLink>

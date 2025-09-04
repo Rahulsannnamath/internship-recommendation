@@ -850,6 +850,12 @@ html[data-theme="dark"] .f-input::placeholder {
 
 .chat-actions { display: flex; gap: .5rem; }
 
+/* (Optional) subtle visual cue when TTS active */
+.chat-actions button:first-child {
+  position: relative;
+}
+.chat-actions button:first-child.tts-on {}
+
 .chat-suggestions {
   display: flex;
   flex-wrap: wrap;
@@ -982,6 +988,9 @@ html[data-theme="dark"] .f-input::placeholder {
   border-radius: 12px;
   line-height: 1.35;
   color: var(--text);
+  min-height: 38px;
+  max-height: 140px;
+  overflow-y: auto;
 }
 
 .chat-text:focus {
@@ -1074,4 +1083,36 @@ html[data-theme="dark"] .f-input::placeholder {
     padding-left: 0.25rem;
     padding-right: 0.25rem;
   }
+}
+
+.mic-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-soft);
+  padding: .55rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: .25s;
+  height: 38px;
+}
+.mic-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.mic-btn.rec {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(220,38,38,.55); }
+  50% { box-shadow:0 0 0 6px rgba(220,38,38,0); }
+}
+.voice-controls {
+  display:flex;
+  align-items:flex-end;
 }
