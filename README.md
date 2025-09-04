@@ -3,7 +3,7 @@
 An AI-powered web platform that helps students discover the right internships based on their profiles, skills, and preferences.  
 It also features a chatbot with **voice interaction**, making the experience more interactive and accessible.
 
-🌐 **Live Demo**: [Internship Assistant](https://internship-frontend-od7h.onrender.com/)
+🌐 **Live Demo**: [Internship Assistant](https://sih-frontend-u2yp.onrender.com/)
 
 ---
 
