@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = 'https://internship-backend-upan.onrender.com';
 
 const Internships = () => {
   const [q,setQ] = useState('');

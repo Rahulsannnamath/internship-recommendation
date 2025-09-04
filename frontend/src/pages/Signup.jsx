@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = 'https://internship-backend-upan.onrender.com';
 
 const Signup = () => {
   const [form, setForm] = useState({ email: '', password: '', confirm: '' });
@@ -25,13 +25,11 @@ const Signup = () => {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Signup failed');
-      // Persist auth immediately (user should complete profile next)
       localStorage.setItem('token', json.token);
       localStorage.setItem('user', JSON.stringify({ id: json.user.id, email: json.user.email }));
       if (json.user.profile) {
         localStorage.setItem('profile', JSON.stringify(json.user.profile));
       }
-      // Redirect to profile completion page
       navigate('/profile', { replace: true });
     } catch (e2) {
       setErr(e2.message);

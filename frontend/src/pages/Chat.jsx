@@ -4,7 +4,7 @@ import {
   Mic, MicOff, Volume2, VolumeX
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const API_BASE = 'https://internship-backend-upan.onrender.com';
 
 const starterSuggestions = [
   'How can I improve my resume?',

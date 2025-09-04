@@ -19,6 +19,11 @@ const Login = () => {
     setErr('');
     setLoading(true);
     try {
+      await fetch('https://internship-backend-upan.onrender.com/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
       await login(email, password);
       const to = location.state?.from || '/internships';
       navigate(to, { replace: true });

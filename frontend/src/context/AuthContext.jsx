@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-const API = 'http://localhost:8080';
+const API = 'https://internship-backend-upan.onrender.com';
 const TOKEN_KEY = 'token';
 const USER_META_KEY = 'userMeta';
 
