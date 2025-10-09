@@ -12,7 +12,7 @@ import User from './models/User.js';
 import UserProfile from './models/userProfile.js';
 import { auth } from './middleware/auth.js';
 import { generateRecommendationsForUser } from "./services/recommendInternships.js";
-import { chatWithGemini } from "./services/chatGemini.js";
+import { chatWithOpenAI } from "./services/chatOpenAI.js";
 
 // TEMP DIAGNOSTIC (remove later)
 console.log('[BOOT] GEMINI_API_KEY present:', process.env.GEMINI_API_KEY ? 'YES len=' + process.env.GEMINI_API_KEY.trim().length : 'NO');
@@ -163,20 +163,43 @@ app.put('/api/profile', auth, async (req, res) => {
 app.post("/api/ai/recommendations", auth, async (req, res) => {
   try {
     const recs = await generateRecommendationsForUser(req.user._id);
-    res.json({ recommendations: recs });
+
+    // Sanitize
+    const isValidId = (id) =>
+      typeof id === "string" &&
+      id.length === 24 &&
+      /^[0-9a-fA-F]+$/.test(id);
+
+    const validIds = recs
+      .map(r => r.internshipId)
+      .filter(isValidId);
+
+    if (validIds.length === 0) {
+      return res.json({ recommendations: recs.map(r => ({ ...r, internship: null })) });
+    }
+
+    const docs = await Internship.find({ _id: { $in: validIds } }).lean();
+    const map = new Map(docs.map(d => [d._id.toString(), d]));
+
+    const enriched = recs.map(r => ({
+      ...r,
+      internship: isValidId(r.internshipId) ? (map.get(r.internshipId) || null) : null
+    }));
+
+    res.json({ recommendations: enriched });
   } catch (e) {
+    console.error("[RECOMMENDATIONS ERROR]", e);
     res.status(400).json({ error: e.message || "Failed to generate recommendations" });
   }
 });
 
-app.post("/api/ai/chat", async (req, res) => {
+// Unified chat handler (OpenAI only)
+async function handleChat(req, res) {
   try {
     const { messages } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "messages array required" });
     }
-
-    // Try optional auth (for personalization) without forcing it
     let tokenUserId = null;
     const header = req.headers.authorization || "";
     if (header.startsWith("Bearer ")) {
@@ -184,17 +207,20 @@ app.post("/api/ai/chat", async (req, res) => {
         const raw = header.slice(7);
         const decoded = jwt.verify(raw, process.env.JWT_SECRET);
         tokenUserId = decoded.sub;
-      } catch {
-        // ignore invalid token (treat as anonymous)
-      }
+      } catch { /* ignore */ }
     }
-
-    const result = await chatWithGemini({ messages, tokenUserId });
-    res.json({ answer: result.answer });
+    const result = await chatWithOpenAI({ messages, tokenUserId });
+    return res.json({ answer: result.answer });
   } catch (e) {
-    res.status(400).json({ error: e.message || "Chat failed" });
+    return res.status(400).json({ error: e.message || "Chat failed" });
   }
-});
+}
+
+// Replace old Gemini route to use OpenAI
+app.post("/api/ai/chat", handleChat);
+
+// (Optional) keep legacy/simple route pointing to same handler
+app.post("/api/chat", handleChat);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);

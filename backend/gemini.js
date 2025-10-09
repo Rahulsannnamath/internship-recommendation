@@ -1,119 +1,97 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import UserProfile from "./models/userProfile.js"; // Correct path to your UserProfile model
-import InternshipPosting from "./models/internshipPosting.js"; // Import the InternshipPosting model
+import OpenAI from "openai";
+import UserProfile from "./models/userProfile.js";
+import InternshipPosting from "./models/internshipPosting.js";
 
-// --- SETUP ---
-// 1. Load environment variables from .env file
 dotenv.config();
 
-const API_KEY = process.env.GEMINI_API_KEY;
-// Note: You had this as process.env.URL, I've changed it to the more standard MONGO_URI
-const MONGO_URI = process.env.URL; 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const MONGO_URI = process.env.URL;
+const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-// 2. Validate environment variables
-if (!API_KEY) {
-  throw new Error("GEMINI_API_KEY is not set in the .env file");
-}
-if (!MONGO_URI) {
-  throw new Error("MONGO_URI is not set in the .env file");
-}
+if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
+if (!MONGO_URI) throw new Error("MONGO_URI missing");
 
-// 3. Initialize the Gemini AI Client
-const genAI = new GoogleGenerativeAI(API_KEY);
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-// --- MAIN FUNCTION ---
 async function runRecommendationTest() {
   try {
-    // --- 1. CONNECT TO DATABASE ---
     console.log("Connecting to MongoDB...");
     await mongoose.connect(MONGO_URI);
-    console.log("MongoDB connected successfully.");
+    console.log("MongoDB connected.");
 
-    // --- 2. FETCH DATA FOR THE PROMPT ---
-    console.log("Fetching user profile and internship data from the database...");
+    console.log("Fetching data...");
     const userProfile = await UserProfile.findOne({ name: "Anjali Rao" }).lean();
     if (!userProfile) {
-      console.error("Test user 'Anjali Rao' not found in the database.");
+      console.error("User not found");
       return;
     }
     const internships = await InternshipPosting.find({}).lean();
 
-    // --- 3. PREPARE DATA & BUILD THE PROMPT ---
-    console.log("Building the prompt for Gemini...");
     const simplifiedUserProfile = {
       skills: userProfile.skills,
       location: userProfile.location,
       interests: userProfile.interests,
-      bio: userProfile.bio,
+      bio: userProfile.bio
     };
-    const internshipsForPrompt = internships.map(internship => ({
-      internshipId: internship._id.toString(),
-      title: internship.title,
-      company: internship.company,
-      description: internship.description,
-      skillsRequired: internship.skillsRequired,
-      location: internship.location
+
+    const internshipsForPrompt = internships.map(i => ({
+      id: i._id,
+      title: i.title,
+      company: i.company,
+      location: i.location,
+      skillsRequired: i.skillsRequired,
+      description: i.description
     }));
 
-    const prompt = `
-      You are an expert AI career advisor. Your task is to analyze a user's profile and recommend the most suitable internships from a provided list. You must evaluate all internships provided.
+    const prompt = `You are an assistant ranking internships.
+User Profile: ${JSON.stringify(simplifiedUserProfile)}
+Internships: ${JSON.stringify(internshipsForPrompt)}
+Return ONLY a JSON array. Each item:
+{
+  "internshipId": "<id>",
+  "title": "<title>",
+  "matchPercentage": <0-100>,
+  "reasons": ["...","..."],
+  "skillMatches": ["..."],
+  "missingSkills": ["..."]
+}
+Sort by matchPercentage desc.`;
 
-      For each internship, you must provide:
-      1. A match percentage (an integer from 0 to 100).
-      2. A brief justification (one sentence) for the match score.
-      3. A list of specific skills the user is missing for that role. If no skills are missing, provide an empty list.
+    console.log("Calling OpenAI...");
+    const completion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: "You produce strict JSON only." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 800
+    });
 
-      The user's profile is:
-      ${JSON.stringify(simplifiedUserProfile, null, 2)}
+    const raw = completion.choices?.[0]?.message?.content || "";
+    const cleaned = raw.replace(/```json|```/g, "").trim();
 
-      The available internship postings are:
-      ${JSON.stringify(internshipsForPrompt, null, 2)}
-
-      Respond ONLY with a valid JSON array of objects, following this structure exactly. Do not add any explanatory text, markdown formatting, or anything else before or after the JSON array.
-    `;
-
-    // --- 4. CALL GEMINI API ---
-    console.log("Sending request to Gemini API...");
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
-
-    // --- 5. CLEAN, PARSE, FILTER, AND DISPLAY THE RESPONSE ---
+    let arr;
     try {
-      // Clean the response to remove any markdown formatting
-      const cleanedResponseText = responseText.replace(/```json\n|```/g, "").trim();
-      
-      // Parse the full response into a JavaScript array
-      const allRecommendations = JSON.parse(cleanedResponseText);
-
-      // ** THIS IS THE NEW LOGIC **
-      // Filter the array to only include items with a match percentage of 50 or greater
-      const filteredRecommendations = allRecommendations.filter(
-        (item) => item.matchPercentage >= 50
-      );
-
-      console.log("\n--- FILTERED RECOMMENDATIONS (>= 50% Match) ---");
-      console.log(JSON.stringify(filteredRecommendations, null, 2));
-      console.log(`\n✅ Test successful! Found ${filteredRecommendations.length} relevant internships.`);
-
-    } catch (parseError) {
-      console.error("Error parsing or filtering Gemini's response.", parseError);
-      console.log("\nRaw response from Gemini:");
-      console.log(responseText);
+      arr = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("Parse error. Raw response:\n", raw);
+      return;
     }
 
-  } catch (error) {
-    console.error("An error occurred:", error);
+    const filtered = arr.filter(x => x.matchPercentage >= 50);
+    console.log("Filtered (>=50%):");
+    console.log(JSON.stringify(filtered, null, 2));
+    console.log(`✅ Found ${filtered.length} relevant internships.`);
+  } catch (e) {
+    console.error("Error:", e);
   } finally {
-    // --- 6. DISCONNECT FROM DATABASE ---
     await mongoose.disconnect();
-    console.log("\nMongoDB disconnected.");
+    console.log("MongoDB disconnected.");
   }
 }
 
-// --- RUN THE SCRIPT ---
 runRecommendationTest();
 
