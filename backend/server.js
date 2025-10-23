@@ -10,12 +10,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from './models/User.js';
 import UserProfile from './models/userProfile.js';
+import Application from './models/Application.js';
 import { auth } from './middleware/auth.js';
 import { generateRecommendationsForUser } from "./services/recommendInternships.js";
 import { chatWithOpenAI } from "./services/chatOpenAI.js";
-
-// TEMP DIAGNOSTIC (remove later)
-console.log('[BOOT] GEMINI_API_KEY present:', process.env.GEMINI_API_KEY ? 'YES len=' + process.env.GEMINI_API_KEY.trim().length : 'NO');
 
 const app = express();
 
@@ -221,6 +219,209 @@ app.post("/api/ai/chat", handleChat);
 
 // (Optional) keep legacy/simple route pointing to same handler
 app.post("/api/chat", handleChat);
+
+// APPLICATION ROUTES
+// Apply to an internship
+app.post("/api/internships/:id/apply", auth, async (req, res) => {
+  try {
+    const internshipId = req.params.id;
+    const { coverLetter, notes } = req.body || {};
+
+    // Validate internship exists
+    const internship = await Internship.findById(internshipId);
+    if (!internship) {
+      return res.status(404).json({ error: "Internship not found" });
+    }
+
+    // Check if already applied
+    const existing = await Application.findOne({
+      user: req.user._id,
+      internship: internshipId
+    });
+
+    if (existing) {
+      return res.status(409).json({ 
+        error: "Already applied to this internship",
+        application: existing
+      });
+    }
+
+    // Create application
+    const application = await Application.create({
+      user: req.user._id,
+      internship: internshipId,
+      coverLetter: coverLetter || "",
+      notes: notes || "",
+      status: "applied"
+    });
+
+    res.json({
+      success: true,
+      message: "Application submitted successfully",
+      application
+    });
+  } catch (e) {
+    console.error("[APPLICATION ERROR]", e);
+    res.status(500).json({ error: e.message || "Application failed" });
+  }
+});
+
+// Get user's applications
+app.get("/api/applications", auth, async (req, res) => {
+  try {
+    const applications = await Application.find({ user: req.user._id })
+      .populate("internship")
+      .sort({ appliedAt: -1 })
+      .lean();
+    
+    res.json({ applications });
+  } catch (e) {
+    console.error("[GET APPLICATIONS ERROR]", e);
+    res.status(500).json({ error: "Failed to fetch applications" });
+  }
+});
+
+// Check if user has applied to specific internship
+app.get("/api/internships/:id/application-status", auth, async (req, res) => {
+  try {
+    const application = await Application.findOne({
+      user: req.user._id,
+      internship: req.params.id
+    }).lean();
+
+    res.json({ 
+      hasApplied: !!application,
+      application: application || null
+    });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to check status" });
+  }
+});
+
+// Get dashboard statistics
+app.get("/api/dashboard/stats", auth, async (req, res) => {
+  try {
+    // Get user profile for match strength
+    await req.user.populate('profile');
+    const profile = req.user.profile;
+    
+    // Count applications by status
+    const totalApplications = await Application.countDocuments({ user: req.user._id });
+    const acceptedApplications = await Application.countDocuments({ 
+      user: req.user._id, 
+      status: 'accepted' 
+    });
+    
+    // Calculate match strength based on profile completeness
+    let matchStrength = 0;
+    if (profile) {
+      const hasSkills = (profile.skills || []).length > 0;
+      const hasLocation = (profile.location || []).length > 0;
+      const hasInterests = (profile.interests || []).length > 0;
+      const hasEducation = profile.education?.degree;
+      const hasResume = profile.resume;
+      const hasBio = profile.bio;
+      
+      const factors = [hasSkills, hasLocation, hasInterests, hasEducation, hasResume, hasBio];
+      const completedFactors = factors.filter(Boolean).length;
+      matchStrength = Math.round((completedFactors / factors.length) * 100);
+    }
+
+    res.json({
+      matchStrength,
+      totalApplications,
+      acceptedApplications,
+      profileCompleteness: matchStrength
+    });
+  } catch (e) {
+    console.error("[DASHBOARD STATS ERROR]", e);
+    res.status(500).json({ error: "Failed to fetch dashboard stats" });
+  }
+});
+
+// Get recent applications for dashboard
+app.get("/api/dashboard/recent-applications", auth, async (req, res) => {
+  try {
+    const applications = await Application.find({ user: req.user._id })
+      .populate("internship")
+      .sort({ appliedAt: -1 })
+      .limit(5)
+      .lean();
+    
+    res.json({ applications });
+  } catch (e) {
+    console.error("[RECENT APPLICATIONS ERROR]", e);
+    res.status(500).json({ error: "Failed to fetch recent applications" });
+  }
+});
+
+// Get top matching internships for dashboard
+app.get("/api/dashboard/top-matches", auth, async (req, res) => {
+  try {
+    await req.user.populate('profile');
+    const profile = req.user.profile;
+    
+    if (!profile || !profile.skills || profile.skills.length === 0) {
+      return res.json({ matches: [] });
+    }
+
+    const userSkills = profile.skills.map(s => s.toLowerCase());
+    const internships = await Internship.find({}).limit(20).lean();
+    
+    // Calculate match percentage for each internship
+    const withMatches = internships.map(internship => {
+      const required = (internship.skillsRequired || []).map(s => s.toLowerCase());
+      const matched = required.filter(r => userSkills.includes(r));
+      const matchPercentage = required.length > 0 
+        ? Math.round((matched.length / required.length) * 100)
+        : 0;
+      
+      return {
+        ...internship,
+        matchPercentage
+      };
+    });
+
+    // Sort by match percentage and take top 4
+    const topMatches = withMatches
+      .sort((a, b) => b.matchPercentage - a.matchPercentage)
+      .slice(0, 4);
+
+    res.json({ matches: topMatches });
+  } catch (e) {
+    console.error("[TOP MATCHES ERROR]", e);
+    res.status(500).json({ error: "Failed to fetch top matches" });
+  }
+});
+
+// Withdraw application
+app.delete("/api/applications/:id", auth, async (req, res) => {
+  try {
+    const applicationId = req.params.id;
+    
+    const application = await Application.findOne({
+      _id: applicationId,
+      user: req.user._id
+    });
+
+    if (!application) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    // Update status to withdrawn instead of deleting
+    application.status = "withdrawn";
+    await application.save();
+
+    res.json({
+      success: true,
+      message: "Application withdrawn successfully",
+      application
+    });
+  } catch (e) {
+    console.error("[WITHDRAW APPLICATION ERROR]", e);
+    res.status(500).json({ error: "Failed to withdraw application" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);

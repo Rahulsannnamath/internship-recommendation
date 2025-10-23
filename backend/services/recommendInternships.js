@@ -1,3 +1,4 @@
+
 import OpenAI from "openai";
 import User from "../models/User.js";
 import InternshipPosting from "../models/internshipPosting.js";

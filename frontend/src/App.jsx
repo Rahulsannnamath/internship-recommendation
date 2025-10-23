@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
-import { LineChart, Briefcase, Sun, Moon, LogIn, UserPlus, User, MessageCircle, LogOut } from 'lucide-react';
+import { LineChart, Briefcase, Sun, Moon, LogIn, UserPlus, User, MessageCircle, LogOut, FileText } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Internships from './pages/Internships.jsx';
 import Profile from './pages/Profile.jsx';
 import Chat from './pages/Chat.jsx';
+import Applications from './pages/Applications.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 
@@ -29,6 +30,7 @@ const AppShellNav = ({ dark, setDark }) => {
       <div className="nav-links">
         <NavLink to="/dashboard" className="nav-item"><LineChart size={18} /><span>Dashboard</span></NavLink>
         <NavLink to="/internships" className="nav-item"><Briefcase size={18} /><span>Internships</span></NavLink>
+        <NavLink to="/applications" className="nav-item"><FileText size={18} /><span>Applications</span></NavLink>
         <NavLink to="/profile" className="nav-item"><User size={18} /><span>Profile</span></NavLink>
         <NavLink to="/chat" className="nav-item"><MessageCircle size={18} /><span>Chat</span></NavLink>
       </div>
@@ -85,6 +87,7 @@ const AppInner = () => {
         <Routes>
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/internships" element={<ProtectedRoute><Internships /></ProtectedRoute>} />
+          <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/login" element={isAuthed ? <Navigate to="/internships" replace /> : <Login />} />
