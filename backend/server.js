@@ -196,6 +196,10 @@ app.post("/api/ai/chat", async (req, res) => {
   }
 });
 
+app.get("/devops",(req,res)=>{
+res.send("devops test worked");
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
 });
