@@ -200,6 +200,10 @@ app.get("/devops",(req,res)=>{
 res.send("devops test worked");
 });
 
+app.get("/test",(req,res)=>{
+  res.send("test push");
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
 });
