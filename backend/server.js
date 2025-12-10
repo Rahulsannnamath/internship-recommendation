@@ -200,7 +200,7 @@ app.get("/devops",(req,res)=>{
 res.send("devops test worked");
 });
 
-app.get("/test",(req,res)=>{
+app.get("/test2",(req,res)=>{
   res.send("test push");
 })
 
