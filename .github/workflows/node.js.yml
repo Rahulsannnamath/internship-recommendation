@@ -13,15 +13,20 @@ jobs:
         node-version: [22.x]
 
     steps:
-    - name: backup env
+    - name: Backup existing .env
       run: |
-        if [-f .env]; then mv .env /temp/env_backup; fi
+        mkdir -p /tmp/env-backup
+        if [ -f backend/.env ]; then
+          cp backend/.env /tmp/env-backup/.env
+        fi
+
     - uses: actions/checkout@v4
-   
-    - name: backup env
+
+    - name: Restore .env after checkout
       run: |
-        if [-f /temp/env_backup]; then mv /temp/env_backup .env; fi
-   
+        if [ -f /tmp/env-backup/.env ]; then
+          cp /tmp/env-backup/.env backend/.env
+        fi
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -37,3 +42,6 @@ jobs:
     - name: Build backend
       run: npm run build --if-present
       working-directory: backend
+
+    - name: Restart PM2 backend
+      run: pm2 restart backend --update-env
