@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+
 const blank = {
   name: '',
   email: '',
@@ -88,7 +90,7 @@ const UserProfileForm = ({ initial = {}, token, onSaved }) => {
       bio: (data.bio || '').slice(0,500)
     };
     try {
-      const res = await fetch('http://localhost:8080/api/profile', {
+      const res = await fetch(`${API_BASE}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -289,7 +291,7 @@ const Profile = () => {
     (async ()=>{
       try {
         const t = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8080/api/profile', {
+        const res = await fetch(`${API_BASE}/api/profile`, {
           headers: { Authorization: `Bearer ${t}` }
         });
         const json = await res.json().catch(()=> ({}));
