@@ -33,3 +33,5 @@ const internshipSchema = new mongoose.Schema(
 const Internship = mongoose.model("Internship", internshipSchema);
 
 export default Internship;
+
+
