@@ -87,7 +87,12 @@ export const AuthProvider = ({ children }) => {
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      throw new Error('Server returned invalid response');
+    }
     if (!res.ok) throw new Error(json.error || 'Login failed');
     const u = {
       id: json.user.id,
@@ -107,7 +112,12 @@ export const AuthProvider = ({ children }) => {
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      throw new Error('Server returned invalid response');
+    }
     if (!res.ok) throw new Error(json.error || 'Signup failed');
     const u = {
       id: json.user.id,
